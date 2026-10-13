@@ -47,7 +47,7 @@ print(f"{w}x{h}{x:+d}{y:+d}")
 '
 )
 
-dir="$HOME/Pictures/Screenshots"
+dir="$HOME/Pictures/screenshots"
 mkdir -p "$dir"
 file="$dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
 
@@ -57,4 +57,4 @@ else
     maim -g "$geometry" -d "$delay" "$file"
 fi
 
-notify-send "screenshot saved" "$file" 2>/dev/null || true
+notify-send "Screenshot saved" "$file" 2>/dev/null || true
