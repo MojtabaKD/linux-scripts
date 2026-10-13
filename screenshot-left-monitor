@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode=full
+delay=0
+
+while (($#)); do
+    case "$1" in
+        --region)
+            mode=region
+            shift
+            ;;
+        --delay)
+            [[ $# -ge 2 ]] || { echo "Usage: --delay SECONDS"; exit 2; }
+            delay=$2
+            [[ "$delay" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
+                echo "Invalid delay: $delay"
+                exit 2
+            }
+            shift 2
+            ;;
+        *)
+            echo "Usage: $0 [--region] [--delay SECONDS]"
+            exit 2
+            ;;
+    esac
+done
+
+if [[ "${XDG_SESSION_TYPE:-x11}" == wayland ]]; then
+    echo "This script requires an X11 session."
+    exit 1
+fi
+
+geometry=$(
+    xrandr --listmonitors | python3 -c '
+import re, sys
+m = []
+for line in sys.stdin:
+    r = re.search(r"(\d+)(?:/[\d.]+)?x(\d+)(?:/[\d.]+)?([+-]\d+)([+-]\d+)", line)
+    if r:
+        w, h, x, y = map(int, r.groups())
+        m.append((x, y, w, h))
+if not m:
+    raise SystemExit("No monitor detected")
+x, y, w, h = min(m, key=lambda v: (v[0], v[1]))
+print(f"{w}x{h}{x:+d}{y:+d}")
+'
+)
+
+dir="$HOME/Pictures/Screenshots"
+mkdir -p "$dir"
+file="$dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
+
+if [[ "$mode" == region ]]; then
+    maim -s -d "$delay" "$file"
+else
+    maim -g "$geometry" -d "$delay" "$file"
+fi
+
+notify-send "screenshot saved" "$file" 2>/dev/null || true
